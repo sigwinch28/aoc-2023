@@ -1,4 +1,5 @@
 from pathlib import Path
+from typing import Iterable, TypeVar
 
 INPUT_PATH = Path(__file__).parent / "input.txt"
 SAMPLE_PATHS = [
@@ -33,7 +34,7 @@ def part1(input):
     return res
 
 
-def parse_digit(s: str):
+def parse_digit(s: str) -> int | None:
     for key, value in DIGITS.items():
         if s.startswith(key):
             return value
@@ -43,21 +44,26 @@ def parse_digit(s: str):
     return None
 
 
+T = TypeVar("T")
+
+
+def tails(input: list[T]) -> Iterable[list[T]]:
+    while input != []:
+        yield input
+        input = input[1:]
+
+
 def parse_digits(s: str):
-    res: list[int] = []
-    while s != "":
-        digit = parse_digit(s)
+    for tail in map(lambda chars: "".join(chars), tails(list(s))):
+        digit = parse_digit(tail)
         if digit is not None:
-            res.append(digit)
-        s = s[1:]
-    return res
+            yield (digit)
 
 
 def part2(input: list[str]):
     sum = 0
     for line in input:
-        digits: list[int] = []
-        digits = parse_digits(line)
+        digits = list(parse_digits(line))
 
         first_digit, last_digit = digits[0], digits[-1]
         sum += int("".join([str(first_digit), str(last_digit)]))
