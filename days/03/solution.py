@@ -1,8 +1,7 @@
-from ast import parse
-from functools import partial, reduce
+from functools import reduce
 from pathlib import Path
 
-from typing import Iterable, Iterator, Literal, TypedDict, Union
+from typing import Iterator, Literal, TypedDict, Union
 
 
 INPUT_PATH = Path(__file__).parent / "input.txt"
