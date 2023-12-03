@@ -24,7 +24,7 @@ def load_input(path: Path):
     return path.read_text().splitlines()
 
 
-def part1(input):
+def part1(input: Iterable[str]):
     res = 0
     for line in input:
         digits = list(filter(lambda x: x.isdigit(), line))
