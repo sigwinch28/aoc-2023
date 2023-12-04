@@ -1,13 +1,5 @@
 from collections import defaultdict
-from pathlib import Path
-
-from typing import Iterator, Literal, TypedDict, Union
-
-
-INPUT_PATH = Path(__file__).parent / "input.txt"
-SAMPLE_PATHS = [
-    Path(__file__).parent / "sample1.txt",
-]
+from typing import Iterator, TypedDict
 
 
 class Card(TypedDict):
@@ -58,10 +50,3 @@ def part2(raw_input: str):
             copies_won[i] += copies
 
     return sum(list(copies_won.values()))
-
-
-if __name__ == "__main__":
-    # print(part1(SAMPLE_PATHS[0].read_text()))
-    print(part1(INPUT_PATH.read_text()))
-    # print(part2(SAMPLE_PATHS[0].read_text()))
-    print(part2(INPUT_PATH.read_text()))

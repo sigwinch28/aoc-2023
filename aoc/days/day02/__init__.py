@@ -1,14 +1,5 @@
 from functools import partial, reduce
-from pathlib import Path
-
 from typing import Iterable, Literal, TypedDict, NotRequired
-
-
-INPUT_PATH = Path(__file__).parent / "input.txt"
-SAMPLE_PATHS = [
-    Path(__file__).parent / "sample1.txt",
-    # Path(__file__).parent / "sample2.txt",
-]
 
 
 class Round(TypedDict):
@@ -72,8 +63,3 @@ def part2(raw_input: str):
         )
 
     return sum(map(power, games))
-
-
-if __name__ == "__main__":
-    print(part1(INPUT_PATH.read_text()))
-    print(part2(INPUT_PATH.read_text()))

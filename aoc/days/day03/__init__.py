@@ -1,13 +1,6 @@
 from functools import reduce
-from pathlib import Path
 
 from typing import Iterator, Literal, TypedDict, Union
-
-
-INPUT_PATH = Path(__file__).parent / "input.txt"
-SAMPLE_PATHS = [
-    Path(__file__).parent / "sample1.txt",
-]
 
 
 class Number(TypedDict):
@@ -105,9 +98,3 @@ def part2(raw_input: str):
         if len(v) == 2
     ]
     return sum(gear_ratios)
-
-
-if __name__ == "__main__":
-    # print(part1(SAMPLE_PATHS[0].read_text()))
-    print(part1(INPUT_PATH.read_text()))
-    print(part2(INPUT_PATH.read_text()))

@@ -1,11 +1,5 @@
-from pathlib import Path
 from typing import Iterable, TypeVar
 
-INPUT_PATH = Path(__file__).parent / "input.txt"
-SAMPLE_PATHS = [
-    Path(__file__).parent / "sample.txt",
-    Path(__file__).parent / "sample2.txt",
-]
 
 DIGITS = {
     "one": 1,
@@ -20,16 +14,14 @@ DIGITS = {
 }
 
 
-def load_input(path: Path):
-    return path.read_text().splitlines()
-
-
-def part1(input: Iterable[str]):
+def part1(raw_input: str):
+    input = raw_input.splitlines()
     res = 0
     for line in input:
         digits = list(filter(lambda x: x.isdigit(), line))
-        first_digit, last_digit = digits[0], digits[-1]
-        res += int("".join([first_digit, last_digit]))
+        if len(digits) > 0:
+            first_digit, last_digit = digits[0], digits[-1]
+            res += int("".join([first_digit, last_digit]))
 
     return res
 
@@ -60,7 +52,8 @@ def parse_digits(s: str):
             yield (digit)
 
 
-def part2(input: list[str]):
+def part2(raw_input: str):
+    input = raw_input.splitlines()
     sum = 0
     for line in input:
         digits = list(parse_digits(line))
@@ -69,8 +62,3 @@ def part2(input: list[str]):
         sum += int("".join([str(first_digit), str(last_digit)]))
 
     return sum
-
-
-if __name__ == "__main__":
-    print(part1(load_input(INPUT_PATH)))
-    print(part2(load_input(INPUT_PATH)))
