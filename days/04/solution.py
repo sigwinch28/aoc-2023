@@ -1,4 +1,4 @@
-from functools import reduce
+from collections import defaultdict
 from pathlib import Path
 
 from typing import Iterator, Literal, TypedDict, Union
@@ -27,29 +27,41 @@ def parse_input(text: str) -> Iterator[Card]:
         yield Card(number=card_number, left_side=left_side, right_side=right_side)
 
 
+def num_matches(card: Card) -> int:
+    return len(card["left_side"] & card["right_side"])
+
+
 def part1(raw_input: str):
-    cards = parse_input(raw_input)
-
     def result(card: Card):
-        num_matches = len(card["left_side"] & card["right_side"])
+        matches = num_matches(card)
         score = 0
-        if num_matches > 0:
-            score = pow(2, num_matches - 1)
-
+        if matches > 0:
+            score = pow(2, matches - 1)
         return score
 
-    map(result, cards)
+    cards = parse_input(raw_input)
 
     return sum(map(result, cards))
 
 
 def part2(raw_input: str):
-    input = parse_input(raw_input)
+    cards = parse_input(raw_input)
 
-    raise NotImplementedError
+    matches = {card["number"]: num_matches(card) for card in cards}
+
+    copies_won: defaultdict[int, int] = defaultdict(lambda: 1)
+    for card_num in sorted(matches):
+        copies = copies_won[card_num]
+        # print(f"Card {card_num} with {copies} instances")
+        for i in range(card_num + 1, card_num + matches[card_num] + 1):
+            # print(f"  wins {copies} copies of {i}")
+            copies_won[i] += copies
+
+    return sum(list(copies_won.values()))
 
 
 if __name__ == "__main__":
     # print(part1(SAMPLE_PATHS[0].read_text()))
     print(part1(INPUT_PATH.read_text()))
-    # print(part2(INPUT_PATH.read_text()))
+    # print(part2(SAMPLE_PATHS[0].read_text()))
+    print(part2(INPUT_PATH.read_text()))
