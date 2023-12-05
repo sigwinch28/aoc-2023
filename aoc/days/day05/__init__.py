@@ -1,42 +1,107 @@
 from dataclasses import dataclass
-from typing import Iterable
+import itertools
+from typing import Iterable, Self
 
 
-@dataclass
-class Range:
+@dataclass(frozen=True)
+class Interval:
+    """[start,finish)"""
+
+    start: int
+    finish: int
+
+    def __str__(self) -> str:
+        return f"[{self.start},{self.finish})"
+
+    def __post_init__(self):
+        assert self.start <= self.finish
+
+    @property
+    def empty(self):
+        return self.start == self.finish
+
+    def intersection(self, other: Self) -> Self | None:
+        if self.finish <= other.start or self.start >= other.finish:
+            return None
+
+        return Interval(
+            start=max((self.start, other.start)),
+            finish=min((self.finish, other.finish)),
+        )
+
+
+@dataclass(frozen=True)
+class Map:
     source_start: int
     dest_start: int
     length: int
 
-    def map(self, src: int) -> int | None:
-        if self.source_start <= src <= self.source_start + self.length:
-            return (src - self.source_start) + self.dest_start
+    def __str__(self) -> str:
+        return f"{self.source_interval} -> {self.dest_interval}"
 
-        return None
+    @property
+    def source_interval(self) -> Interval:
+        return Interval(start=self.source_start, finish=self.source_start + self.length)
+
+    @property
+    def dest_interval(self) -> Interval:
+        return Interval(start=self.dest_start, finish=self.dest_start + self.length)
+
+    def map(self, interval: Interval) -> None | tuple[Interval, Iterable[Interval]]:
+        intersection = interval.intersection(self.source_interval)
+        if intersection is None:
+            return None
+
+        delta = self.dest_start - self.source_start
+        middle = Interval(
+            start=intersection.start + delta, finish=intersection.finish + delta
+        )
+
+        left = Interval(start=interval.start, finish=intersection.start)
+        right = Interval(start=intersection.finish, finish=interval.finish)
+
+        return (middle, filter(lambda i: not i.empty, (left, right)))
+
+    def yeet(
+        self, intervals: Iterable[Interval]
+    ) -> tuple[Iterable[Interval], Iterable[Interval]]:
+        results: list[Interval] = []
+        unmapped: list[Interval] = []
+        for interval in intervals:
+            mapped = self.map(interval)
+            if mapped is None:
+                unmapped.append(interval)
+                continue
+            (x, other) = mapped
+            results.append(x)
+            unmapped.extend(other)
+
+        return (results, unmapped)
 
 
 @dataclass
-class Map:
-    ranges: list[Range]
+class Maps:
+    maps: list[Map]
 
-    def map(self, src: int) -> int:
-        for r in self.ranges:
-            res = r.map(src)
-            if res is not None:
-                return res
+    def map(self, intervals: Iterable[Interval]) -> Iterable[Interval]:
+        results: list[Interval] = []
+        remainder: Iterable[Interval] = list(intervals)
+        for m in self.maps:
+            (m_results, remainder) = m.yeet(remainder)
+            results.extend(m_results)
 
-        return src
+        return itertools.chain(results, remainder)
 
 
 @dataclass
 class Almanac:
-    seeds: list[int]
-    mapping_pipeline: list[Map]
+    seeds: list[Interval]
+    maps: list[Maps]
 
-    def map(self) -> Iterable[int]:
-        res: Iterable[int] = self.seeds
-        for m in self.mapping_pipeline:
-            res = map(m.map, res)
+    def map(self) -> Iterable[Interval]:
+        res = self.seeds
+        for m in self.maps:
+            res = list(m.map(res))
 
         return res
 
@@ -50,27 +115,46 @@ def parse_input(text: str) -> Almanac:
             chunks[-1].append(line)
 
     [seeds_str] = chunks[0]
+
     seeds = list(map(int, seeds_str.split(":", maxsplit=1)[1].strip().split()))
+    seed_intervals: list[Interval] = []
+    for i in range(0, len(seeds), 2):
+        seed_intervals.append(Interval(start=seeds[i], finish=seeds[i] + seeds[i + 1]))
 
-    def parse_range(line: str) -> Range:
+    def parse_map(line: str) -> Map:
         [dest_start, source_start, length] = list(map(int, line.strip().split()))
-        return Range(source_start=source_start, dest_start=dest_start, length=length)
+        return Map(source_start=source_start, dest_start=dest_start, length=length)
 
-    def parse_map(chunk: list[str]) -> Map:
-        ranges = list(map(parse_range, chunk[1:]))
-        return Map(ranges=ranges)
+    def parse_maps(chunk: list[str]) -> Maps:
+        maps = list(map(parse_map, chunk[1:]))
+        return Maps(maps=maps)
 
-    mapping_pipeline = list(map(parse_map, chunks[1:]))
+    maps = list(map(parse_maps, chunks[1:]))
 
-    return Almanac(seeds=seeds, mapping_pipeline=mapping_pipeline)
+    return Almanac(seeds=seed_intervals, maps=maps)
 
 
 def part1(raw_input: str):
     almanac = parse_input(raw_input)
 
-    return min(almanac.map())
+    new_seeds: list[Interval] = []
+    for seed_interval in almanac.seeds:
+        new_seeds.append(
+            Interval(start=seed_interval.start, finish=seed_interval.start + 1)
+        )
+
+        new_seeds.append(
+            Interval(
+                start=seed_interval.finish - seed_interval.start,
+                finish=(seed_interval.finish - seed_interval.start) + 1,
+            )
+        )
+
+    almanac = Almanac(seeds=new_seeds, maps=almanac.maps)
+
+    return min(map(lambda i: i.start, almanac.map()))
 
 
 def part2(raw_input: str):
-    input = parse_input(raw_input)
-    return 0
+    almanac = parse_input(raw_input)
+    return min(map(lambda i: i.start, almanac.map()))
