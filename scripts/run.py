@@ -16,6 +16,7 @@ class Day(Protocol):
 
 
 def run(day: int) -> None:
+    print(f"Day {day}")
     mod = cast(Day, importlib.import_module(f".day{day:02}", "aoc.days"))
     inputs = list(lib.sample_paths(day))
 
@@ -25,18 +26,19 @@ def run(day: int) -> None:
 
     for path in inputs:
         input = path.read_text()
-        print(f"{path.name}:")
-        print(f"  Part 1: {mod.part1(input)}")
-        print(f"  Part 2: {mod.part2(input)}")
+        print(f"  {path.name}:")
+        print(f"    Part 1: {mod.part1(input)}")
+        print(f"    Part 2: {mod.part2(input)}")
 
 
 def main():
     parser = argparse.ArgumentParser()
 
-    parser.add_argument("day", type=int)
+    parser.add_argument("days", nargs="+", type=int)
 
     args = parser.parse_args()
-    run(args.day)
+    for day in args.days:
+        run(day)
 
 
 if __name__ == "__main__":
