@@ -1,7 +1,6 @@
 from collections import defaultdict
 from dataclasses import dataclass
 from functools import cached_property
-import pathlib
 from typing import DefaultDict, Literal, Optional, Self
 
 HandType = Literal[
