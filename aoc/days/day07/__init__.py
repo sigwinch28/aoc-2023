@@ -1,7 +1,8 @@
 from collections import defaultdict
 from dataclasses import dataclass
+from functools import cached_property
 import pathlib
-from typing import DefaultDict, Literal, Self
+from typing import DefaultDict, Literal, Optional, Self
 
 HandType = Literal[
     "five_of_a_kind",
@@ -43,7 +44,6 @@ CARD_RANKS: list[str] = [
 class Card:
     name: str
     value: int
-    joker: bool
 
     def __repr__(self):
         return self.name
@@ -53,77 +53,40 @@ class Card:
 class Hand:
     cards: list[Card]
     bid: int
+    joker: Optional[str]
 
     def __repr__(self):
         cards_str = "".join(map(repr, self.cards))
         return f"{cards_str} {self.bid}"
 
-    @property
+    @cached_property
     def type(self) -> HandType:
-        """Determine the type of the hand, accounting for jokers.
-
-        The general approach is:
-        1. Count the number of jokers
-        2. Count the occurrences of all cards excluding jokers, then add the
-           number of jokers to each occurrence.
-        3. Pick the highest count from (2) as the highest card.
-        4. Count the occurrences of all cards excluding jokers and the card from
-           (3).
-        5. Pick the highest count from (4).
-        6. Use the combination of (3,5) and check the value of that."""
-
-        # count all the jokers in the hand
-        jokers: DefaultDict[str, int] = defaultdict(int)
-        for card in self.cards:
-            if card.joker:
-                jokers[card.name] += 1
-
-        # The occurrences of all cards, plus the number of jokers.
-        # For example, the hand 977JJ will be:
-        # 7: 2 + 2 jokers = 4
-        # 9: 1 + 2 jokers = 3
-        # .
-        cards_including_jokers: DefaultDict[str, int] = defaultdict(int)
-        for card in self.cards:
-            cards_including_jokers[card.name] += 1
-
-        for card, count in jokers.items():
-            for k in cards_including_jokers:
-                if k == card:
-                    continue
-                cards_including_jokers[k] += count
-
-        sorted_cards_including_jokers = sorted(
-            cards_including_jokers.items(), reverse=True, key=lambda kv: kv[1]
-        )
-        (
-            name_of_most_card_including_jokers,
-            count_of_most_card_including_jokers,
-        ) = sorted_cards_including_jokers[0]
-
-        # The occurrences of all cards that are not jokers.
-        # For example, the hand 977JJ will be:
-        # 7: 2
-        # 9: 1
-        # .
-        cards_excluding_jokers: DefaultDict[str, int] = defaultdict(int)
-        for card in self.cards:
-            if not card.joker:
-                cards_excluding_jokers[card.name] += 1
-
-        sorted_cards_excluding_jokers = sorted(
-            (
-                value
-                for key, value in cards_excluding_jokers.items()
-                if key != name_of_most_card_including_jokers
-            ),
-            reverse=True,
-        )
-        second_most_without_jokers = (
-            sorted_cards_excluding_jokers[0] if sorted_cards_excluding_jokers else 0
+        jokers = (
+            len([card for card in self.cards if card.name == self.joker])
+            if self.joker
+            else 0
         )
 
-        match count_of_most_card_including_jokers, second_most_without_jokers:
+        frequencies: DefaultDict[str, int] = defaultdict(int)
+
+        for card in self.cards:
+            if self.joker is None or card.name != self.joker:
+                frequencies[card.name] += 1
+
+        frequencies_desc = sorted(
+            frequencies.items(), reverse=True, key=lambda kv: kv[1]
+        )
+        if frequencies_desc:
+            highest_name, highest_count = frequencies_desc[0]
+            del frequencies[highest_name]
+        else:
+            highest_count = 0
+
+        second_highest_count = (
+            (sorted(frequencies.values(), reverse=True)[0]) if frequencies else 0
+        )
+
+        match highest_count + jokers, second_highest_count:
             case 5, _:
                 return "five_of_a_kind"
             case 4, _:
@@ -153,20 +116,21 @@ class Hand:
 
 
 def parse_input(
-    text: str, card_ranks: list[str], jokers: set[str] = set()
+    text: str,
+    card_ranks: list[str],
+    joker: Optional[str] = None,
 ) -> list[Hand]:
     def parse_hand(line: str) -> Hand:
         [cards, bid] = line.split(" ")
         return Hand(
             cards=list(
                 map(
-                    lambda card: Card(
-                        card, card_ranks.index(card), joker=card in jokers
-                    ),
+                    lambda card: Card(card, card_ranks.index(card)),
                     cards,
                 )
             ),
             bid=int(bid),
+            joker=joker,
         )
 
     return [parse_hand(line) for line in text.splitlines()]
@@ -183,7 +147,7 @@ def part1(raw_input: str):
 
 def part2(raw_input: str):
     card_ranks = ["A", "K", "Q", "T", "9", "8", "7", "6", "5", "4", "3", "2", "J"]
-    hands = parse_input(raw_input, card_ranks, jokers={"J"})
+    hands = parse_input(raw_input, card_ranks, joker="J")
 
     return sum(
         i * card.bid for i, card in enumerate(sorted(hands, reverse=True), start=1)
