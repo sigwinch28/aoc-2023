@@ -18,7 +18,7 @@ class Day(Protocol):
 def run(day: int) -> None:
     print(f"Day {day}")
     mod = cast(Day, importlib.import_module(f".day{day:02}", "aoc.days"))
-    inputs = list(lib.sample_paths(day))
+    inputs = sorted(list(lib.sample_paths(day)))
 
     input_path = lib.input_path(day)
     if input_path.exists():
